@@ -21,6 +21,14 @@ enum cc_stat {
 
 #define BUF_SIZE 4096
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+#define min(a, b) ({            \
+    __typeof__ (a) _a = (a);    \
+    __typeof__ (b) _b = (b);    \
+    _a < _b ? _a : _b;          \
+})
+
 /**
  * Implemention of a tiny gabage collector.
  *

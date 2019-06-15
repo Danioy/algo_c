@@ -17,10 +17,15 @@ item_t
 pop();
 
 bool
-is_empty();
+empty();
 
 void
 push( item_t );
 
+item_t
+top();
+
+void
+free();
 
 #endif

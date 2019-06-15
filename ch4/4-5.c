@@ -4,37 +4,76 @@
  */
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 #include "item.h"
 #include "stack.h"
 
+
+
+bool is_op( char ch) {
+    switch ( ch ) {
+    case '+':  case '-': case '*': case '/': case '$':
+    return true;
+    }
+    return false;
+}
+
+bool is_di_do( char ch) {
+    if ((ch == '.') || ((ch >='0') && (ch <= '9'))) return true;
+    return false;
+}
+
+int prece(char ch) {
+    switch (ch) {
+    case '+': case '-':
+        return 2;
+    case '*': case '/':
+        return 4;
+    case '$': case '^': case '_':
+        return 6;
+    case '(': return 0;
+    }
+    return 0;
+}
+
 void
-infix_prefix( char *in, size_t len, char **out) {
-    char *prefix = malloc(len * sizeof(char));
-    memset(prefix, 0x00, len * sizeof(char));
+infix_postfix( char *in, size_t len, char **out) {
+    char *post = malloc(100 * sizeof(char));
+    memset(post, 0x00, 100 * sizeof(char));
 
     size_t i, j;
-    char x;
 
     stack_init(len);
 
     for ( i = 0, j = 0; i < len; i++)
     {
-        if ((in[i] >= '0') && (in[i] <= '9'))
-            {prefix[j++] = in[i]; prefix[j++] = ' ';}
-        if (in[i] == '(')
+        if ( in[i] == '(') push(in[i]);
+        if (is_op(in[i])) {
+            while (prece(top()) >= prece(in[i]))
+            post[j++] = pop();
             push(in[i]);
-        if (in[i] == ')')
-            while ((x = pop()) != '(')
-                prefix[j++] = x;
-        if ((in[i] == '*') || (in[i] == '+'))
-            push(in[i]);
-    }
-    while (!is_empty()) prefix[j++] = pop();
+        }
+        if (is_di_do(in[i])) {
+            while (is_di_do(in[i])){
+                post[j++] = in[i];
+                i++;
+            }
+            post[j++] = ' ';
+        }
+        if (in[i] == ')') {
+            while (top() != '(') {
+                post[j++] = pop();
+            }
+            pop();
+        }
 
-    *out = prefix;
+    }
+    while (!is_empty()) post[j++] = pop();
+
+    *out = post;
 }
 
 
@@ -50,9 +89,21 @@ eval_prefix( char *in, size_t len ) {
             pile[dp++] = strtod(p, &end);
             p = end;
         }
-        if ( *p == '+' ) pile[dp++] = pile[--dp] + pile[--dp];
-        if ( *p == '*' ) pile[dp++] = pile[--dp] * pile[--dp];
-        if ( *p == '/' ) pile[dp++] = pile[--dp] / pile[--dp];
+        if ( *p == '+' ) {
+            tmp = pile[--dp];
+            tmp += pile[--dp];
+            pile[dp++] = tmp;
+        }
+        if ( *p == '*' ) {
+            tmp = pile[--dp];
+            tmp *= pile[--dp];
+            pile[dp++] = tmp;
+        }
+        if ( *p == '/' ) {
+            tmp = pile[--dp];
+            tmp /= pile[--dp];
+            pile[dp++] = tmp;
+        }
         if ( *p == '$' ) {
             tmp = pile[--dp];
             pile[dp++] = (tmp > 0) ? tmp : -tmp;
@@ -70,14 +121,12 @@ eval_prefix( char *in, size_t len ) {
 int
 main(void )
 {
-    char *in = "( 5 * ( ( 9 * 8 ) + ( 7 * ( 4 + 6 ) ) ) )";
+    char *in = "(-(-1) + $((-1) * (-1)-(4 * (-1))))/2";
     char *out;
 
-    infix_prefix(in, strlen(in), &out);
+    infix_postfix(in, strlen(in), &out);
 
     printf("%s\n", out);
-
-    // printf("%f \n", eval_prefix(out, strlen(out)));
 
     free(out);
 }

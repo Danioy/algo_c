@@ -30,7 +30,7 @@ stack_init( size_t bufsize )
 }
 
 bool
-is_empty()
+empty()
 {
     return stack->size == 0;
 }
@@ -50,4 +50,16 @@ item_t
 pop()
 {
     return stack->buff[--stack->size];
+}
+
+item_t
+top()
+{
+    return stack->buff[stack->size - 1];
+}
+
+void free()
+{
+    free(stack->buff);
+    free(stack);
 }
